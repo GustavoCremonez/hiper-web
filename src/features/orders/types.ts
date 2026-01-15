@@ -1,10 +1,12 @@
-export enum OrderStatus {
-  Pending = 'Pending',
-  Confirmed = 'Confirmed',
-  Processing = 'Processing',
-  Completed = 'Completed',
-  Cancelled = 'Cancelled'
-}
+export const OrderStatus = {
+  Pending: 'Pending',
+  Confirmed: 'Confirmed',
+  Processing: 'Processing',
+  Completed: 'Completed',
+  Cancelled: 'Cancelled'
+} as const
+
+export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus]
 
 export interface OrderItem {
   id: string
