@@ -36,13 +36,30 @@ src/
 npm install
 ```
 
-## Desenvolvimento
+## Executando com Docker (Recomendado)
 
 ```bash
+docker-compose up --build -d
+```
+
+Acesse http://localhost:3000
+
+O docker-compose sobe:
+- Frontend (Nginx) na porta 3000
+- Backend (API) internamente
+- PostgreSQL na porta 5432
+- RabbitMQ na porta 5672 e Management na porta 15672
+
+## Desenvolvimento Local
+
+```bash
+npm install
 npm run dev
 ```
 
 Acesse http://localhost:5173
+
+O proxy do Vite redireciona requisições /api para http://localhost:5000
 
 ## Build
 
@@ -61,26 +78,18 @@ npm run build
 - Formatação de valores em reais
 - Formatação de datas em português
 
-## Configuração
+## Arquitetura de Deploy
 
-O proxy para a API está configurado no `vite.config.ts`:
+O frontend é servido via Nginx que também atua como proxy reverso para a API:
 
-```typescript
-server: {
-  proxy: {
-    '/api': {
-      target: 'http://localhost:5000',
-      changeOrigin: true
-    }
-  }
-}
+```
+Cliente → Nginx:3000 → /api → Backend:8080
+                     → /    → Frontend (static files)
 ```
 
-## Integração com Backend
+No desenvolvimento local, o Vite Dev Server faz o proxy:
 
-Certifique-se de que o backend está rodando em http://localhost:5000 antes de iniciar o frontend.
-
-```bash
-cd ../hiper-oder-service
-docker-compose up -d
+```
+Cliente → Vite:5173 → /api → Backend:5000
+                    → /    → Frontend (HMR)
 ```
