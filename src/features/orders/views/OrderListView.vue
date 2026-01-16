@@ -6,7 +6,7 @@ import StatusBadge from '../../../shared/components/StatusBadge.vue'
 import { OrderStatus } from '../types'
 
 const router = useRouter()
-const { orders, loading, error, fetchOrders, updateOrderStatus } = useOrders()
+const { orders, loading, error, currentPage, totalPages, totalCount, fetchOrders, updateOrderStatus } = useOrders()
 
 onMounted(() => {
   fetchOrders()
@@ -46,6 +46,12 @@ async function handleStatusChange(orderId: string, newStatus: OrderStatus) {
     await updateOrderStatus(orderId, { newStatus })
   } catch (err) {
     console.error('Erro ao atualizar status:', err)
+  }
+}
+
+async function changePage(page: number) {
+  if (page >= 1 && page <= totalPages.value) {
+    await fetchOrders(page)
   }
 }
 </script>
