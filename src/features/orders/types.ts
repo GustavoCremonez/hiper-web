@@ -42,3 +42,11 @@ export interface CreateOrderRequest {
 export interface UpdateStatusRequest {
   newStatus: OrderStatus
 }
+
+export interface PagedResult<T> {
+  items: T[]
+  totalCount: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
