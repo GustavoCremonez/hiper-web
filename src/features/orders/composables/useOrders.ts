@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { orderService } from '../services/orderService'
 import type { Order, CreateOrderRequest, UpdateStatusRequest } from '../types'
+import { useNotifications } from '../../../composables/useNotifications'
 
 export function useOrders() {
   const orders = ref<Order[]>([])
@@ -11,6 +12,8 @@ export function useOrders() {
   const pageSize = ref(10)
   const totalPages = ref(0)
   const totalCount = ref(0)
+
+  const { notifyOrderCreated, notifyOrderStatusChanged, notifyOrderCancelled } = useNotifications()
 
   async function fetchOrders(page: number = 1) {
     loading.value = true
@@ -47,6 +50,7 @@ export function useOrders() {
     error.value = null
     try {
       const order = await orderService.create(request)
+      notifyOrderCreated(order.id, request.customerName)
       return order.id
     } catch (err) {
       error.value = 'Erro ao criar pedido'
@@ -61,7 +65,13 @@ export function useOrders() {
     loading.value = true
     error.value = null
     try {
+      const oldOrder = orders.value.find(o => o.id === id) || currentOrder.value
       const updatedOrder = await orderService.updateStatus(id, request)
+
+      if (oldOrder) {
+        notifyOrderStatusChanged(id, oldOrder.status, updatedOrder.status)
+      }
+
       currentOrder.value = updatedOrder
       const index = orders.value.findIndex(o => o.id === id)
       if (index !== -1) {
@@ -81,6 +91,7 @@ export function useOrders() {
     error.value = null
     try {
       await orderService.cancel(id)
+      notifyOrderCancelled(id)
       orders.value = orders.value.filter(o => o.id !== id)
       if (currentOrder.value?.id === id) {
         currentOrder.value = null
