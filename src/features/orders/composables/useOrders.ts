@@ -7,12 +7,20 @@ export function useOrders() {
   const currentOrder = ref<Order | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const currentPage = ref(1)
+  const pageSize = ref(10)
+  const totalPages = ref(0)
+  const totalCount = ref(0)
 
-  async function fetchOrders() {
+  async function fetchOrders(page: number = 1) {
     loading.value = true
     error.value = null
     try {
-      orders.value = await orderService.getAll()
+      const result = await orderService.getAll(page, pageSize.value)
+      orders.value = result.items
+      currentPage.value = result.page
+      totalPages.value = result.totalPages
+      totalCount.value = result.totalCount
     } catch (err) {
       error.value = 'Erro ao carregar pedidos'
       console.error(err)
@@ -38,8 +46,8 @@ export function useOrders() {
     loading.value = true
     error.value = null
     try {
-      const orderId = await orderService.create(request)
-      return orderId
+      const order = await orderService.create(request)
+      return order.id
     } catch (err) {
       error.value = 'Erro ao criar pedido'
       console.error(err)
@@ -91,6 +99,10 @@ export function useOrders() {
     currentOrder,
     loading,
     error,
+    currentPage,
+    pageSize,
+    totalPages,
+    totalCount,
     fetchOrders,
     fetchOrderById,
     createOrder,

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { Order, CreateOrderRequest, UpdateStatusRequest } from '../types'
+import type { Order, CreateOrderRequest, UpdateStatusRequest, PagedResult } from '../types'
 
 const API_URL = '/api'
 
@@ -11,8 +11,10 @@ const api = axios.create({
 })
 
 export const orderService = {
-  async getAll(): Promise<Order[]> {
-    const response = await api.get<Order[]>('/orders')
+  async getAll(page: number = 1, pageSize: number = 10): Promise<PagedResult<Order>> {
+    const response = await api.get<PagedResult<Order>>('/orders', {
+      params: { page, pageSize }
+    })
     return response.data
   },
 
@@ -21,8 +23,8 @@ export const orderService = {
     return response.data
   },
 
-  async create(request: CreateOrderRequest): Promise<string> {
-    const response = await api.post<string>('/orders', request)
+  async create(request: CreateOrderRequest): Promise<Order> {
+    const response = await api.post<Order>('/orders', request)
     return response.data
   },
 
