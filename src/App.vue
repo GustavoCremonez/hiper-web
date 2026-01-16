@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useNotifications } from './composables/useNotifications'
 
-const { permission, requestPermission } = useNotifications()
+const { requestPermission } = useNotifications()
 const showNotificationBanner = ref(false)
 
 onMounted(() => {

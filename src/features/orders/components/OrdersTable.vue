@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { Order, OrderStatus } from '../types'
 import StatusBadge from '../../../shared/components/StatusBadge.vue'
 import { OrderStatus as OrderStatusEnum } from '../types'
