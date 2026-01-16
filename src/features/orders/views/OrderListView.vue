@@ -51,19 +51,19 @@ async function changePage(page: number) {
       {{ error }}
     </div>
 
-    <div v-else-if="!loading && orders.length === 0" class="bg-white shadow-md rounded-lg p-12 text-center">
+    <div v-else-if="!loading && (!orders || orders.length === 0)" class="bg-white shadow-md rounded-lg p-12 text-center">
       <p class="text-gray-500 text-lg">Nenhum pedido encontrado</p>
     </div>
 
     <OrdersTable
       v-else
-      :orders="orders"
+      :orders="orders || []"
       :loading="loading"
       @view-order="viewOrder"
       @status-change="handleStatusChange"
     />
 
-    <div v-if="!loading && orders.length > 0" class="mt-6 flex items-center justify-between">
+    <div v-if="!loading && orders && orders.length > 0" class="mt-6 flex items-center justify-between">
       <div class="text-sm text-gray-700">
         Mostrando {{ orders.length }} de {{ totalCount }} pedidos
       </div>
