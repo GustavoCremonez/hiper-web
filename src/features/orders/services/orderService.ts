@@ -1,5 +1,7 @@
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import type { Order, CreateOrderRequest, UpdateStatusRequest, PagedResult } from '../types'
+import type { ApiErrorResponse } from '../../../types/api'
+import { useToast } from '../../../composables/useToast'
 
 const API_URL = '/api'
 
@@ -9,6 +11,37 @@ const api = axios.create({
     'Content-Type': 'application/json'
   }
 })
+
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<ApiErrorResponse>) => {
+    const toast = useToast()
+
+    if (error.response) {
+      const errorData = error.response.data
+
+      if (errorData.code === 'VALIDATION_ERROR' && errorData.errors) {
+        const errorMessages = Object.entries(errorData.errors)
+          .map(([, messages]) => `${messages.join(', ')}`)
+          .join('; ')
+
+        toast.error('Atenção', errorMessages)
+      } else if (errorData.code === 'NOT_FOUND') {
+        toast.error('Não Encontrado', errorData.message)
+      } else if (errorData.code === 'BUSINESS_RULE_VIOLATION') {
+        toast.warning('Atenção', errorData.message)
+      } else {
+        toast.error('Erro', errorData.message || 'Ocorreu um erro inesperado')
+      }
+    } else if (error.request) {
+      toast.error('Erro de Conexão', 'Não foi possível conectar ao servidor. Verifique sua conexão.')
+    } else {
+      toast.error('Erro', 'Ocorreu um erro inesperado ao processar a requisição.')
+    }
+
+    return Promise.reject(error)
+  }
+)
 
 export const orderService = {
   async getAll(page: number = 1, pageSize: number = 10): Promise<PagedResult<Order>> {
