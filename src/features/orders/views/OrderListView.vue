@@ -21,11 +21,7 @@ function createOrder() {
 }
 
 async function handleStatusChange(orderId: string, newStatus: OrderStatus) {
-  try {
-    await updateOrderStatus(orderId, { newStatus })
-  } catch (err) {
-    console.error('Erro ao atualizar status:', err)
-  }
+  await updateOrderStatus(orderId, { newStatus })
 }
 
 async function changePage(page: number) {

@@ -56,9 +56,8 @@ export function useOrders() {
       notifyOrderCreated(order.id, request.customerName)
       return order.id
     } catch (err) {
-      error.value = 'Erro ao criar pedido'
-      console.error(err)
-      throw err
+      console.error('Erro ao criar pedido:', err)
+      return null
     } finally {
       loading.value = false
     }
@@ -71,21 +70,19 @@ export function useOrders() {
       const oldOrder = orders.value.find(o => o.id === id) || currentOrder.value
       const updatedOrder = await orderService.updateStatus(id, request)
 
-      toast.success('Status Atualizado', 'O status do pedido foi atualizado com sucesso!')
-
-      if (oldOrder) {
-        notifyOrderStatusChanged(id, oldOrder.status, updatedOrder.status)
-      }
-
       currentOrder.value = updatedOrder
       const index = orders.value.findIndex(o => o.id === id)
       if (index !== -1) {
         orders.value[index] = updatedOrder
       }
+
+      toast.success('Status Atualizado', 'O status do pedido foi atualizado com sucesso!')
+
+      if (oldOrder) {
+        notifyOrderStatusChanged(id, oldOrder.status, updatedOrder.status)
+      }
     } catch (err) {
-      error.value = 'Erro ao atualizar status'
-      console.error(err)
-      throw err
+      console.error('Erro ao atualizar status:', err)
     } finally {
       loading.value = false
     }
@@ -103,9 +100,7 @@ export function useOrders() {
         currentOrder.value = null
       }
     } catch (err) {
-      error.value = 'Erro ao cancelar pedido'
-      console.error(err)
-      throw err
+      console.error('Erro ao cancelar pedido:', err)
     } finally {
       loading.value = false
     }

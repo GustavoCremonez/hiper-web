@@ -69,15 +69,14 @@ async function handleSubmit() {
     return
   }
 
-  try {
-    const orderId = await createOrder({
-      customerName: customerName.value,
-      customerEmail: customerEmail.value,
-      items: items.value
-    })
+  const orderId = await createOrder({
+    customerName: customerName.value,
+    customerEmail: customerEmail.value,
+    items: items.value
+  })
+
+  if (orderId) {
     router.push(`/orders/${orderId}`)
-  } catch (err) {
-    console.error('Erro ao criar pedido:', err)
   }
 }
 
