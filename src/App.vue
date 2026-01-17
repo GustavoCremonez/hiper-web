@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useNotifications } from './composables/useNotifications'
+import ToastContainer from './components/ToastContainer.vue'
 
 const { requestPermission } = useNotifications()
 const showNotificationBanner = ref(false)
@@ -44,5 +45,6 @@ function handleDismissBanner() {
       </div>
     </div>
     <router-view />
+    <ToastContainer />
   </div>
 </template>
