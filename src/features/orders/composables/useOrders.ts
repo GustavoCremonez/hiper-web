@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { orderService } from '../services/orderService'
 import type { Order, CreateOrderRequest, UpdateStatusRequest } from '../types'
 import { useNotifications } from '../../../composables/useNotifications'
+import { useToast } from '../../../composables/useToast'
 
 export function useOrders() {
   const orders = ref<Order[]>([])
@@ -14,6 +15,7 @@ export function useOrders() {
   const totalCount = ref(0)
 
   const { notifyOrderCreated, notifyOrderStatusChanged, notifyOrderCancelled } = useNotifications()
+  const toast = useToast()
 
   async function fetchOrders(page: number = 1) {
     loading.value = true
@@ -50,6 +52,7 @@ export function useOrders() {
     error.value = null
     try {
       const order = await orderService.create(request)
+      toast.success('Pedido Criado', `Pedido de ${request.customerName} foi criado com sucesso!`)
       notifyOrderCreated(order.id, request.customerName)
       return order.id
     } catch (err) {
@@ -67,6 +70,8 @@ export function useOrders() {
     try {
       const oldOrder = orders.value.find(o => o.id === id) || currentOrder.value
       const updatedOrder = await orderService.updateStatus(id, request)
+
+      toast.success('Status Atualizado', 'O status do pedido foi atualizado com sucesso!')
 
       if (oldOrder) {
         notifyOrderStatusChanged(id, oldOrder.status, updatedOrder.status)
@@ -91,6 +96,7 @@ export function useOrders() {
     error.value = null
     try {
       await orderService.cancel(id)
+      toast.success('Pedido Cancelado', 'O pedido foi cancelado com sucesso!')
       notifyOrderCancelled(id)
       orders.value = orders.value.filter(o => o.id !== id)
       if (currentOrder.value?.id === id) {
