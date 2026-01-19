@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, onScopeDispose } from 'vue'
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info'
 
@@ -11,6 +11,7 @@ export interface Toast {
 }
 
 const toasts = ref<Toast[]>([])
+const timerIds = new Map<string, number>()
 
 export function useToast() {
   function addToast(type: ToastType, title: string, message: string, duration: number = 5000) {
@@ -27,15 +28,23 @@ export function useToast() {
     toasts.value.push(toast)
 
     if (duration > 0) {
-      setTimeout(() => {
+      const timerId = window.setTimeout(() => {
         removeToast(id)
       }, duration)
+
+      timerIds.set(id, timerId)
     }
 
     return id
   }
 
   function removeToast(id: string) {
+    const timerId = timerIds.get(id)
+    if (timerId !== undefined) {
+      clearTimeout(timerId)
+      timerIds.delete(id)
+    }
+
     const index = toasts.value.findIndex(t => t.id === id)
     if (index > -1) {
       toasts.value.splice(index, 1)
@@ -59,8 +68,15 @@ export function useToast() {
   }
 
   function clear() {
+    timerIds.forEach(timerId => clearTimeout(timerId))
+    timerIds.clear()
     toasts.value = []
   }
+
+  onScopeDispose(() => {
+    timerIds.forEach(timerId => clearTimeout(timerId))
+    timerIds.clear()
+  })
 
   return {
     toasts,

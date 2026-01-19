@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { orderService } from '../services/orderService'
+import { createOrderService } from '../services/orderService'
 import type { Order, CreateOrderRequest, UpdateStatusRequest } from '../types'
 import { useNotifications } from '../../../composables/useNotifications'
 import { useToast } from '../../../composables/useToast'
@@ -16,6 +16,7 @@ export function useOrders() {
 
   const { notifyOrderCreated, notifyOrderStatusChanged, notifyOrderCancelled } = useNotifications()
   const toast = useToast()
+  const orderService = createOrderService(toast)
 
   async function fetchOrders(page: number = 1) {
     loading.value = true

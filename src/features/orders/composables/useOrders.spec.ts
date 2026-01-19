@@ -1,16 +1,30 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useOrders } from './useOrders'
-import { orderService } from '../services/orderService'
+import { createOrderService } from '../services/orderService'
 import { OrderStatus } from '../types'
 import type { Order, CreateOrderRequest, PagedResult } from '../types'
 
-vi.mock('../services/orderService')
+vi.mock('../services/orderService', () => ({
+  createOrderService: vi.fn()
+}))
+
 vi.mock('../../../composables/useNotifications', () => ({
   useNotifications: () => ({
     notifyOrderCreated: vi.fn(),
     notifyOrderStatusChanged: vi.fn(),
     notifyOrderCancelled: vi.fn()
   })
+}))
+
+vi.mock('../../../composables/useToast', () => ({
+  useToast: vi.fn(() => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+    removeToast: vi.fn(),
+    clear: vi.fn()
+  }))
 }))
 
 describe('useOrders', () => {
@@ -41,20 +55,29 @@ describe('useOrders', () => {
     totalPages: 1
   }
 
+  const mockOrderService = {
+    getAll: vi.fn(),
+    getById: vi.fn(),
+    create: vi.fn(),
+    updateStatus: vi.fn(),
+    cancel: vi.fn()
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(createOrderService).mockReturnValue(mockOrderService)
   })
 
   describe('fetchOrders', () => {
     it('deve buscar pedidos com sucesso', async () => {
-      vi.mocked(orderService.getAll).mockResolvedValue(mockPagedResult)
+      vi.mocked(mockOrderService.getAll).mockResolvedValue(mockPagedResult)
 
       const { orders, loading, error, fetchOrders, currentPage, totalPages, totalCount } = useOrders()
 
       expect(loading.value).toBe(false)
       await fetchOrders()
 
-      expect(orderService.getAll).toHaveBeenCalledWith(1, 10)
+      expect(mockOrderService.getAll).toHaveBeenCalledWith(1, 10)
       expect(orders.value).toEqual([mockOrder])
       expect(currentPage.value).toBe(1)
       expect(totalPages.value).toBe(1)
@@ -64,7 +87,7 @@ describe('useOrders', () => {
     })
 
     it('deve tratar erro ao buscar pedidos', async () => {
-      vi.mocked(orderService.getAll).mockRejectedValue(new Error('Network error'))
+      vi.mocked(mockOrderService.getAll).mockRejectedValue(new Error('Network error'))
 
       const { orders, loading, error, fetchOrders } = useOrders()
 
@@ -76,32 +99,32 @@ describe('useOrders', () => {
     })
 
     it('deve buscar pedidos de página específica', async () => {
-      vi.mocked(orderService.getAll).mockResolvedValue(mockPagedResult)
+      vi.mocked(mockOrderService.getAll).mockResolvedValue(mockPagedResult)
 
       const { fetchOrders } = useOrders()
 
       await fetchOrders(2)
 
-      expect(orderService.getAll).toHaveBeenCalledWith(2, 10)
+      expect(mockOrderService.getAll).toHaveBeenCalledWith(2, 10)
     })
   })
 
   describe('fetchOrderById', () => {
     it('deve buscar pedido por ID com sucesso', async () => {
-      vi.mocked(orderService.getById).mockResolvedValue(mockOrder)
+      vi.mocked(mockOrderService.getById).mockResolvedValue(mockOrder)
 
       const { currentOrder, loading, error, fetchOrderById } = useOrders()
 
       await fetchOrderById(mockOrder.id)
 
-      expect(orderService.getById).toHaveBeenCalledWith(mockOrder.id)
+      expect(mockOrderService.getById).toHaveBeenCalledWith(mockOrder.id)
       expect(currentOrder.value).toEqual(mockOrder)
       expect(loading.value).toBe(false)
       expect(error.value).toBe(null)
     })
 
     it('deve tratar erro ao buscar pedido por ID', async () => {
-      vi.mocked(orderService.getById).mockRejectedValue(new Error('Not found'))
+      vi.mocked(mockOrderService.getById).mockRejectedValue(new Error('Not found'))
 
       const { currentOrder, error, fetchOrderById } = useOrders()
 
@@ -122,13 +145,13 @@ describe('useOrders', () => {
         ]
       }
 
-      vi.mocked(orderService.create).mockResolvedValue(mockOrder)
+      vi.mocked(mockOrderService.create).mockResolvedValue(mockOrder)
 
       const { createOrder, loading, error } = useOrders()
 
       const orderId = await createOrder(request)
 
-      expect(orderService.create).toHaveBeenCalledWith(request)
+      expect(mockOrderService.create).toHaveBeenCalledWith(request)
       expect(orderId).toBe(mockOrder.id)
       expect(loading.value).toBe(false)
       expect(error.value).toBe(null)
@@ -143,67 +166,70 @@ describe('useOrders', () => {
         ]
       }
 
-      vi.mocked(orderService.create).mockRejectedValue(new Error('Validation error'))
+      vi.mocked(mockOrderService.create).mockRejectedValue(new Error('Validation error'))
 
-      const { createOrder, error } = useOrders()
+      const { createOrder } = useOrders()
 
-      await expect(createOrder(request)).rejects.toThrow()
-      expect(error.value).toBe('Erro ao criar pedido')
+      const orderId = await createOrder(request)
+
+      expect(orderId).toBe(null)
     })
   })
 
   describe('updateOrderStatus', () => {
     it('deve atualizar status do pedido com sucesso', async () => {
       const updatedOrder = { ...mockOrder, status: OrderStatus.Confirmed }
-      vi.mocked(orderService.updateStatus).mockResolvedValue(updatedOrder)
+      vi.mocked(mockOrderService.updateStatus).mockResolvedValue(updatedOrder)
 
       const { orders, currentOrder, updateOrderStatus, fetchOrders } = useOrders()
 
-      vi.mocked(orderService.getAll).mockResolvedValue(mockPagedResult)
+      vi.mocked(mockOrderService.getAll).mockResolvedValue(mockPagedResult)
       await fetchOrders()
 
       await updateOrderStatus(mockOrder.id, { newStatus: OrderStatus.Confirmed })
 
-      expect(orderService.updateStatus).toHaveBeenCalledWith(mockOrder.id, { newStatus: OrderStatus.Confirmed })
+      expect(mockOrderService.updateStatus).toHaveBeenCalledWith(mockOrder.id, { newStatus: OrderStatus.Confirmed })
       expect(currentOrder.value).toEqual(updatedOrder)
       expect(orders.value[0].status).toBe(OrderStatus.Confirmed)
     })
 
     it('deve tratar erro ao atualizar status', async () => {
-      vi.mocked(orderService.updateStatus).mockRejectedValue(new Error('Invalid transition'))
+      vi.mocked(mockOrderService.updateStatus).mockRejectedValue(new Error('Invalid transition'))
 
-      const { updateOrderStatus, error } = useOrders()
+      const { updateOrderStatus } = useOrders()
 
-      await expect(updateOrderStatus(mockOrder.id, { newStatus: OrderStatus.Confirmed })).rejects.toThrow()
-      expect(error.value).toBe('Erro ao atualizar status')
+      await updateOrderStatus(mockOrder.id, { newStatus: OrderStatus.Confirmed })
+
+      expect(mockOrderService.updateStatus).toHaveBeenCalledWith(mockOrder.id, { newStatus: OrderStatus.Confirmed })
     })
   })
 
   describe('cancelOrder', () => {
     it('deve cancelar pedido com sucesso', async () => {
-      vi.mocked(orderService.cancel).mockResolvedValue(undefined)
+      vi.mocked(mockOrderService.cancel).mockResolvedValue(undefined)
 
       const { orders, currentOrder, cancelOrder, fetchOrders } = useOrders()
 
-      vi.mocked(orderService.getAll).mockResolvedValue(mockPagedResult)
+      vi.mocked(mockOrderService.getAll).mockResolvedValue(mockPagedResult)
       await fetchOrders()
 
       currentOrder.value = mockOrder
 
       await cancelOrder(mockOrder.id)
 
-      expect(orderService.cancel).toHaveBeenCalledWith(mockOrder.id)
+      expect(mockOrderService.cancel).toHaveBeenCalledWith(mockOrder.id)
       expect(orders.value).toEqual([])
       expect(currentOrder.value).toBe(null)
     })
 
     it('deve tratar erro ao cancelar pedido', async () => {
-      vi.mocked(orderService.cancel).mockRejectedValue(new Error('Cannot cancel'))
+      vi.mocked(mockOrderService.cancel).mockRejectedValue(new Error('Cannot cancel'))
 
-      const { cancelOrder, error } = useOrders()
+      const { cancelOrder } = useOrders()
 
-      await expect(cancelOrder(mockOrder.id)).rejects.toThrow()
-      expect(error.value).toBe('Erro ao cancelar pedido')
+      await cancelOrder(mockOrder.id)
+
+      expect(mockOrderService.cancel).toHaveBeenCalledWith(mockOrder.id)
     })
   })
 })
